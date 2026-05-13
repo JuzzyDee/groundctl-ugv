@@ -1,0 +1,88 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.cursor/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets — anything in these files should never be committed
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+.groundctl.env
+.anthropic.env
+.deepgram.env
+
+# Build outputs
+dist/
+build/
+*.engine        # TensorRT — must be built on target hardware
+*.trt
+*.plan
+
+# ROS2
+install/
+log/
+build/
+
+# Rosbag captures — use external storage / Git LFS if needed
+*.bag
+*.mcap
+*.db3
+rosbags/
+
+# Local data + logs
+*.log
+*.jsonl
+.groundctl/
+heartbeat_*.jsonl
+imu_capture_*.csv
+
+# Large media — link externally rather than committing
+*.mov
+*.mp4
+*.MOV
+*.MP4
+*.zip
+
+# CAD / 3D — use Git LFS for files over ~10 MB
+*.stl
+*.3mf
+*.f3d
+*.step
+*.STEP
+*.iges
+*.IGES
+# (unbreak these via .gitattributes + Git LFS when needed)
+
+# Resin printer slicer outputs
+*.ctb
+*.pwma
+*.pwmo
+
+# Diagnostic outputs
+/tmp/
+tool-results/
