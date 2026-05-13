@@ -65,7 +65,7 @@ Known issue: 18650s are undersized for the platform. Peak draw during skid-steer
 
 ## Test environment
 
-Central Queensland Coast. Open grass cul-de-sac, no traffic, WiFi mesh coverage. First outings stay in the cul-de-sac. Eventually: boardwalk, duck pond, Pineapple Rail Trail into town.
+Central Queensland Coast. Quiet rural cul-de-sac, open grass, no through traffic, WiFi mesh coverage. First outings stay in the cul-de-sac. Eventually: regional boardwalk, duck pond, rail trail into town.
 
 ## Hardware that lives elsewhere
 

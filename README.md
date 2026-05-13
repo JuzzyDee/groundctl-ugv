@@ -10,7 +10,7 @@ A working rover stack that translates Claude inference into physical motion, wit
 
 A general robotics framework. Implementation is specific to the Waveshare UGV Rover + ROS2 Humble + Jetson Orin Nano 4GB. The three-layer *architecture* generalises to any platform exposing the same interfaces; the *code* does not.
 
-A demo. The rover has been doing live follow walks on the Central Queensland Coast driveway since mid-April 2026.
+A demo. The rover has been doing live follow walks on a rural Central Queensland Coast driveway since mid-April 2026.
 
 ## Architecture
 
