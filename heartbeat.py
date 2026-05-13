@@ -172,6 +172,24 @@ def build_system_prompt():
         except Exception:
             pass
     prompt_path = PROMPTS[MODE]
+    if not prompt_path.exists():
+        # Fall back to the .example scaffold so the rover can still boot for
+        # smoke-tests, but loudly remind the operator they're running with the
+        # generic developer-persona reference instead of their own prompt.
+        example_path = prompt_path.with_name(prompt_path.name + ".example")
+        if example_path.exists():
+            print(
+                f"  WARNING: {prompt_path.name} not found; falling back to "
+                f"{example_path.name}.\n"
+                f"  This prompt was authored for the original developer's persona "
+                f"and is NOT tuned to your environment. Before any real outing:\n"
+                f"      cp {example_path} {prompt_path}\n"
+                f"      # then edit to reflect your operator, dog, landmarks, voice."
+            )
+            prompt_path = example_path
+        else:
+            print(f"  FATAL: neither {prompt_path} nor {example_path} found.", file=sys.stderr)
+            sys.exit(1)
     try:
         prompt = prompt_path.read_text()
     except Exception as e:

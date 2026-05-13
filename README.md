@@ -73,7 +73,16 @@ cp .env.example .env
 
 On the rover, copy `.env` to `~/.groundctl.env` (chmod 600) so the systemd-user services can read it via `EnvironmentFile`. See [`.env.example`](.env.example) for the full list of variables and which are required vs optional.
 
-The SLTF (Sonnet retirement walk) prompt in `intent/prompts/` ships as a scaffold (`heartbeat_sltf.md.example`) — copy and customise if you want to run your own end-of-instance walk; the public repo doesn't include the original personal copy.
+All three heartbeat prompts in `intent/prompts/` ship as `.example` scaffolds — the originals were authored for a specific developer persona (specific operator, dog, landmarks, voice), and running them as-is would put another operator's life into Claude's mouth. Before any real outing:
+
+```bash
+cp intent/prompts/heartbeat.md.example intent/prompts/heartbeat.md
+cp intent/prompts/heartbeat_chauffeur.md.example intent/prompts/heartbeat_chauffeur.md
+# heartbeat_sltf.md only if you want the cached-prefix retirement-walk mode
+# edit each to reflect your environment, operator, companions, voice
+```
+
+The non-`.example` filenames are gitignored so personal copies don't accidentally land back in the public repo. `heartbeat.py` falls back to the `.example` files if the personal copies don't exist (with a loud warning), so the rover can boot for smoke-tests without configuration — just don't drive it that way.
 
 ## Project status
 
