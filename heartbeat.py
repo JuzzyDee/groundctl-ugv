@@ -78,6 +78,14 @@ CONTEXT_WINDOW = 12
 MEMORIA_URL = os.environ.get("MEMORIA_URL", "")  # empty → memoria writes silently skipped
 MEMORIA_TOKEN = os.environ.get("MEMORIA_WEBHOOK_TOKEN", "")
 
+# Memoria MCP — when set, attaches memoria's read tools (recall, recall_check,
+# recall_specific, recall_image, review) to Haiku via Anthropic's mcp_servers
+# parameter. Image-writes still flow through MEMORIA_URL + exec_remember()
+# because the camera frame is already in Haiku's vision context — routing
+# image-writes through MCP would double-encode the frame as a JSON arg.
+MEMORIA_MCP_URL = os.environ.get("MEMORIA_MCP_URL", "")
+MEMORIA_MCP_TOKEN = os.environ.get("MEMORIA_MCP_TOKEN", "")
+
 DEEPGRAM_API_KEY = os.environ.get("DEEPGRAM_API_KEY", "")
 
 LOG_DIR = Path.home() / ".groundctl"
@@ -1193,7 +1201,7 @@ def heartbeat(beat_num, test_frame=None, dry_run=False, idle_timeout=False):
     # response we're about to discard anyway.
     cancelled = False
     response = None
-    with client.messages.stream(
+    stream_kwargs = dict(
         model=MODELS[MODE],
         max_tokens=MAX_TOKENS[MODE],
         system=build_system_blocks(),
@@ -1208,8 +1216,16 @@ def heartbeat(beat_num, test_frame=None, dry_run=False, idle_timeout=False):
                 }},
                 {"type": "text", "text": user_text}
             ]
+        }],
+    )
+    if MEMORIA_MCP_URL:
+        stream_kwargs["mcp_servers"] = [{
+            "type": "url",
+            "url": MEMORIA_MCP_URL,
+            "name": "memoria",
+            "authorization_token": MEMORIA_MCP_TOKEN,
         }]
-    ) as stream:
+    with client.messages.stream(**stream_kwargs) as stream:
         for _ in stream:
             if pending_completion():
                 cancelled = True
