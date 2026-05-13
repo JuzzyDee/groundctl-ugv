@@ -39,9 +39,12 @@
 #   ./start_ros2.sh
 #
 # Then verify:
-#   curl http://100.x.x.x:5000/state
+#   curl http://${ROVER}:5000/state
 
-ROVER=${ROVER:-100.x.x.x}
+# Load .env if present so ROVER / ROVER_USER / CONTAINER can come from there.
+[ -f .env ] && set -a && source .env && set +a
+
+ROVER="${ROVER:?ROVER not set. Copy .env.example to .env and configure the rover Tailscale/LAN address.}"
 ROVER_USER=${ROVER_USER:-jetson}
 CONTAINER=${CONTAINER:-ugv_jp6}
 OLD_CONTAINER=ugv_jetson_ros_humble

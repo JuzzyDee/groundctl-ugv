@@ -7,7 +7,8 @@
 # Run from your Mac:
 #   ./stop_ros2.sh
 
-ROVER=${ROVER:-100.x.x.x}
+[ -f .env ] && set -a && source .env && set +a
+ROVER="${ROVER:?ROVER not set. See .env.example.}"
 ROVER_USER=${ROVER_USER:-jetson}
 CONTAINER=ugv_jetson_ros_humble
 

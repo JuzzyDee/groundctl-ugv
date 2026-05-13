@@ -36,6 +36,10 @@ Thumbs.db
 .anthropic.env
 .deepgram.env
 
+# Personal SLTF prompt — ship the scaffold (heartbeat_sltf.md.example),
+# keep individual personal copies out of version control by default.
+intent/prompts/heartbeat_sltf.md
+
 # Build outputs
 dist/
 build/

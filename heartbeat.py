@@ -35,7 +35,15 @@ from intent.intent_stack import list_intents, list_intents_by_category
 from intent.intent_executor_client import ExecutorClient
 from intent import intents as _intents  # auto-registers all intents (for heartbeat tool definitions)
 
-ROVER_IP = os.environ.get("ROVER_IP", "100.x.x.x")
+ROVER_IP = os.environ.get("ROVER_IP")
+if not ROVER_IP:
+    print(
+        "FATAL: ROVER_IP environment variable not set.\n"
+        "Copy .env.example to .env (or ~/.groundctl.env on the rover) "
+        "and set ROVER_IP to the Jetson's Tailscale or LAN address.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 ROVER_URL = f"http://{ROVER_IP}:5000"
 
 # When heartbeat runs on the rover itself (systemd-user service post-#48),
@@ -67,7 +75,7 @@ MAX_MOVE_DURATION = 10.0  # closed-loop intents (drive_distance) are safer than 
 # truly-stale reflections is capped.
 CONTEXT_WINDOW = 12
 
-MEMORIA_URL = os.environ.get("MEMORIA_URL", "http://100.x.x.x:7777")
+MEMORIA_URL = os.environ.get("MEMORIA_URL", "")  # empty → memoria writes silently skipped
 MEMORIA_TOKEN = os.environ.get("MEMORIA_WEBHOOK_TOKEN", "")
 
 DEEPGRAM_API_KEY = os.environ.get("DEEPGRAM_API_KEY", "")

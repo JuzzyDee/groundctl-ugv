@@ -60,7 +60,20 @@ Those pieces are evidence-of-thinking. This repo is evidence-of-doing.
 
 Recreating this stack on identical hardware is the goal of subsequent commits. Each subsystem's directory will contain its own README documenting setup, dependencies, and known calibration.
 
-For now: see [`HARDWARE.md`](HARDWARE.md) for the bill of materials and [`ARCHITECTURE.md`](ARCHITECTURE.md) for the design reasoning. Code arrives via subsequent atomic commits as the migration from the predecessor private repo completes.
+For now: see [`HARDWARE.md`](HARDWARE.md) for the bill of materials and [`ARCHITECTURE.md`](ARCHITECTURE.md) for the design reasoning.
+
+## Setup
+
+```bash
+git clone <this repo>
+cd groundctl-ugv
+cp .env.example .env
+# fill in ANTHROPIC_API_KEY, DEEPGRAM_API_KEY, ROVER_IP, etc.
+```
+
+On the rover, copy `.env` to `~/.groundctl.env` (chmod 600) so the systemd-user services can read it via `EnvironmentFile`. See [`.env.example`](.env.example) for the full list of variables and which are required vs optional.
+
+The SLTF (Sonnet retirement walk) prompt in `intent/prompts/` ships as a scaffold (`heartbeat_sltf.md.example`) — copy and customise if you want to run your own end-of-instance walk; the public repo doesn't include the original personal copy.
 
 ## Project status
 
