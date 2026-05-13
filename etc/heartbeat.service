@@ -31,9 +31,9 @@ Environment=ROVER_IP=localhost
 # correct pulse socket instead of falling through to ALSA default.
 Environment=XDG_RUNTIME_DIR=/run/user/1000
 Environment=PULSE_SERVER=unix:/run/user/1000/pulse/native
-# Run from the home directory so groundctl/ package on PYTHONPATH via
-# CWD is found. heartbeat.py imports groundctl.intent_stack and
-# groundctl.intent_executor_client.
+# Run from the home directory so the intent/ package on PYTHONPATH via
+# CWD is found. heartbeat.py imports intent.intent_stack and
+# intent.intent_executor_client.
 WorkingDirectory=%h
 ExecStart=/usr/bin/python3 -u %h/heartbeat.py
 # Manual start by design — operator toggles via the phone control panel.

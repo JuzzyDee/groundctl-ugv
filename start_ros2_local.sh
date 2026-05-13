@@ -138,7 +138,7 @@ docker exec -d ${CONTAINER} bash -c 'source /opt/ros/humble/setup.bash && source
 
 echo "==> Deploying intent_executor..."
 docker cp $HOST_HOME/intent_executor.py ${CONTAINER}:/tmp/intent_executor.py
-docker cp $HOST_HOME/groundctl ${CONTAINER}:/tmp/groundctl
+docker cp $HOST_HOME/intent ${CONTAINER}:/tmp/intent
 docker exec ${CONTAINER} bash -c 'pkill -9 -f intent_executor.py 2>/dev/null; rm -f /tmp/intent_executor.pid; sleep 1'
 docker exec -d ${CONTAINER} bash -c 'cd /tmp && source /opt/ros/humble/setup.bash && source /home/ws/ugv_ws/install/setup.bash && python3 /tmp/intent_executor.py >> /tmp/intent_executor.log 2>&1'
 

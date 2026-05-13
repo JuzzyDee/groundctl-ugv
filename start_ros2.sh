@@ -128,7 +128,7 @@ echo "==> Deploying camera_owner (single-owner /dev/video_usb with freshness-con
 # Port 5001 (bridge stays on 5000). Field validation (battery + outdoor +
 # motors-running) still pending — that's the failure environment we're
 # really proving against.
-scp camera_owner.py ${ROVER_USER}@${ROVER}:/home/jetson/camera_owner.py
+scp perception/camera_owner.py ${ROVER_USER}@${ROVER}:/home/jetson/camera_owner.py
 ssh ${ROVER_USER}@${ROVER} "docker cp /home/jetson/camera_owner.py ${CONTAINER}:/tmp/camera_owner.py"
 
 echo "==> Killing any existing camera_owner / gst_camera_node and starting fresh..."
@@ -147,7 +147,7 @@ rsync -a web/ClaudeBot/ ${ROVER_USER}@${ROVER}:/home/jetson/web_claudebot/
 ssh ${ROVER_USER}@${ROVER} "docker cp /home/jetson/web_claudebot/. ${CONTAINER}:/tmp/web/ClaudeBot/"
 
 echo "==> Deploying latest bridge..."
-scp ros2_bridge.py ${ROVER_USER}@${ROVER}:/home/jetson/ros2_bridge.py
+scp bridge/ros2_bridge.py ${ROVER_USER}@${ROVER}:/home/jetson/ros2_bridge.py
 ssh ${ROVER_USER}@${ROVER} "docker cp /home/jetson/ros2_bridge.py ${CONTAINER}:/tmp/ros2_bridge.py"
 
 echo "==> Killing any existing bridge and waiting for port to free..."
@@ -174,7 +174,7 @@ ssh ${ROVER_USER}@${ROVER} "nohup python3 /home/jetson/control_panel.py >> /tmp/
 sleep 2
 
 echo "==> Deploying yolo_detector..."
-scp yolo_detector.py ${ROVER_USER}@${ROVER}:/home/jetson/yolo_detector.py
+scp perception/yolo_detector.py ${ROVER_USER}@${ROVER}:/home/jetson/yolo_detector.py
 
 echo "==> Starting yolo_detector (with proxy env unset — Waveshare landmine)..."
 ssh ${ROVER_USER}@${ROVER} "docker exec -d ${CONTAINER} bash -c 'unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy NO_PROXY && source /opt/ros/humble/setup.bash && source /home/ws/ugv_ws/install/setup.bash && python3 /home/ws/yolo_detector.py > /tmp/yolo.log 2>&1'"
@@ -183,7 +183,7 @@ echo "==> Waiting for yolo warmup (CUDA kernel compilation)..."
 sleep 15
 
 echo "==> Deploying lidar_safety node..."
-scp lidar_safety.py ${ROVER_USER}@${ROVER}:/home/jetson/lidar_safety.py
+scp perception/lidar_safety.py ${ROVER_USER}@${ROVER}:/home/jetson/lidar_safety.py
 ssh ${ROVER_USER}@${ROVER} "docker cp /home/jetson/lidar_safety.py ${CONTAINER}:/tmp/lidar_safety.py"
 
 echo "==> Killing existing lidar_safety..."
@@ -198,10 +198,10 @@ echo "==> Deploying intent_executor (10Hz intent stack on rover, replaces heartb
 # via HTTP on :5050. This removes the start/stop motor pattern caused by
 # the 500ms pwm_driver deadman timing out between 1Hz heartbeat ticks.
 # Needs the groundctl Python package alongside it for intent imports.
-scp intent_executor.py ${ROVER_USER}@${ROVER}:/home/jetson/intent_executor.py
-rsync -a --exclude '__pycache__' groundctl/ ${ROVER_USER}@${ROVER}:/home/jetson/groundctl/
+scp intent/intent_executor.py ${ROVER_USER}@${ROVER}:/home/jetson/intent_executor.py
+rsync -a --exclude '__pycache__' intent/ ${ROVER_USER}@${ROVER}:/home/jetson/intent/
 ssh ${ROVER_USER}@${ROVER} "docker cp /home/jetson/intent_executor.py ${CONTAINER}:/tmp/intent_executor.py"
-ssh ${ROVER_USER}@${ROVER} "docker cp /home/jetson/groundctl ${CONTAINER}:/tmp/groundctl"
+ssh ${ROVER_USER}@${ROVER} "docker cp /home/jetson/intent ${CONTAINER}:/tmp/intent"
 
 echo "==> Killing existing intent_executor..."
 ssh ${ROVER_USER}@${ROVER} "docker exec ${CONTAINER} bash -c 'pkill -9 -f intent_executor.py 2>/dev/null; rm -f /tmp/intent_executor.pid; sleep 1'"
@@ -255,7 +255,7 @@ echo "==> Restarting OAK-D spatial detection daemon (person tracking w/ 3D pos).
 # First-run note: if ~/.cache/depthai doesn't already have the mobilenet
 # blob, the pipeline start-up will download it (~20 MB). Service has
 # TimeoutStartSec=60 to cover this.
-scp oakd_spatial.py ${ROVER_USER}@${ROVER}:/home/jetson/oakd_spatial.py
+scp perception/oakd_spatial.py ${ROVER_USER}@${ROVER}:/home/jetson/oakd_spatial.py
 scp etc/oakd_spatial.service ${ROVER_USER}@${ROVER}:/home/jetson/.config/systemd/user/oakd_spatial.service
 ssh ${ROVER_USER}@${ROVER} "systemctl --user daemon-reload && systemctl --user enable --now oakd_spatial && sleep 2 && systemctl --user is-active oakd_spatial"
 
