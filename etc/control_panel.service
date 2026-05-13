@@ -1,0 +1,28 @@
+[Unit]
+Description=Rover operator console host-side controller (port 5060)
+# Manages systemd-user services (heartbeat, listener_daemon, oakd_spatial)
+# and triggers start_ros2_local.sh. Bridge proxies /control/* through to
+# this on localhost:5060.
+# pulseaudio.socket needed because start_ros2_local.sh (spawned by the
+# "Restart ROS2" button) ends with a paplay of the ready-WAV. Without
+# PULSE_SERVER set, paplay falls through to ALSA default = HDMI = silent.
+After=network-online.target pulseaudio.socket
+Wants=network-online.target pulseaudio.socket
+
+[Service]
+Type=simple
+EnvironmentFile=-%h/.groundctl.env
+# Subprocess inherits these. start_ros2_local.sh's paplay step depends on
+# them when bring-up is triggered via the operator console (vs. via
+# ros2_init.service at boot, which sets them itself). Without these, the
+# button-invoked bring-up silently plays into HDMI / ALSA default.
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=PULSE_SERVER=unix:/run/user/1000/pulse/native
+ExecStart=/usr/bin/python3 -u %h/control_panel.py
+Restart=on-failure
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

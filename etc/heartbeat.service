@@ -1,0 +1,49 @@
+[Unit]
+Description=Claude heartbeat — autonomous perception loop for the rover
+# Bridge must be reachable for /state, /snapshot, /inbox. We don't gate
+# on the bridge's docker container directly (different unit space) but
+# requiring network-online is enough — bridge is up by the time the
+# operator hits Start Heartbeat from the phone, which is the trigger.
+# pulseaudio.socket needed so exec_speak's paplay can play TTS through
+# the USB PnP speaker (validated 2026-05-10: paplay-via-systemd needs
+# explicit PULSE_SERVER + XDG_RUNTIME_DIR to find the user pulse daemon).
+After=network-online.target pulseaudio.socket
+Wants=network-online.target pulseaudio.socket
+# Don't infinite-loop restart if the API key is wrong or similar.
+# StartLimit* directives belong in [Unit] in modern systemd.
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+# Secrets live here (chmod 600):
+#   ANTHROPIC_API_KEY     — Haiku/Sonnet calls
+#   MEMORIA_WEBHOOK_TOKEN — Memoria writes
+#   DEEPGRAM_API_KEY      — TTS via Aura-2
+EnvironmentFile=%h/.groundctl.env
+# When heartbeat runs on the rover itself, ROVER_IP=localhost shortcuts
+# the legacy ssh-from-Mac-to-rover paths in exec_speak. See
+# run_on_rover() in heartbeat.py.
+Environment=ROVER_IP=localhost
+# paplay (used by exec_speak for TTS playback) needs to find the user
+# pulse daemon. systemd-user services don't inherit XDG_RUNTIME_DIR /
+# PULSE_SERVER reliably. Setting them explicitly resolves paplay to the
+# correct pulse socket instead of falling through to ALSA default.
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=PULSE_SERVER=unix:/run/user/1000/pulse/native
+# Run from the home directory so groundctl/ package on PYTHONPATH via
+# CWD is found. heartbeat.py imports groundctl.intent_stack and
+# groundctl.intent_executor_client.
+WorkingDirectory=%h
+ExecStart=/usr/bin/python3 -u %h/heartbeat.py
+# Manual start by design — operator toggles via the phone control panel.
+# Justin runs the rover stack 20 times in dev for every 1 time he wants
+# autonomy on. Auto-start would burn API budget on every iteration.
+Restart=on-failure
+RestartSec=5
+# Journal for logs — `journalctl --user -u heartbeat -f` to tail.
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

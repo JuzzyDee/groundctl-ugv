@@ -1,0 +1,36 @@
+[Unit]
+Description=Rover voice listener (Deepgram Nova-2 streaming STT)
+# This Jetson has both PipeWire (as the graph engine) and actual PulseAudio
+# (socket-activated, for client-compat). libpulse in pyaudio talks to the
+# pulseaudio socket; depending on pulseaudio.socket guarantees it's up
+# before we try to capture.
+After=pulseaudio.socket pipewire.service
+Wants=pulseaudio.socket
+
+[Service]
+Type=simple
+# Secrets (DEEPGRAM_API_KEY, and eventually MEMORIA + ANTHROPIC) live here.
+# chmod 600. systemd-run will also respect EnvironmentFile via --property=.
+EnvironmentFile=%h/.groundctl.env
+# PULSE_SOURCE pins the capture source — pipewire-pulse's "default source"
+# has been observed to auto-switch to onboard audio when another process
+# touches the graph. Pinning avoids that entirely.
+Environment=PULSE_SOURCE=alsa_input.usb-Solid_State_System_Co._Ltd._USB_PnP_Audio_Device_000000000000-00.analog-stereo
+# PULSE_SERVER + XDG_RUNTIME_DIR tell libpulse WHERE the pulse daemon
+# lives. Pinning the SOURCE is moot if libpulse never finds the server.
+# systemd-user under linger (boot-without-login) doesn't reliably
+# propagate XDG_RUNTIME_DIR / the implicit pulse-discovery path to
+# children. Same env hole that silently broke paplay's playback side —
+# mic and speaker are the same USB PnP device, same failure mode in
+# both directions.
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=PULSE_SERVER=unix:/run/user/1000/pulse/native
+ExecStart=%h/ugv_jetson/ugv-env/bin/python3 -u %h/listener_daemon.py --language en-AU
+Restart=on-failure
+RestartSec=3
+# Keep stdout/stderr flowing to journalctl --user -u listener_daemon -f
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

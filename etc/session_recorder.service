@@ -1,0 +1,18 @@
+[Unit]
+Description=Session recorder — bag start/stop + audio feedback for capture sessions
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/jetson/session_recorder.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+# PulseAudio access for paplay. The %U expansion gives the user's UID at
+# runtime, matching how listener_daemon and other audio-using services connect.
+Environment=PULSE_SERVER=unix:/run/user/%U/pulse/native
+
+[Install]
+WantedBy=default.target

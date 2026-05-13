@@ -1,0 +1,40 @@
+[Unit]
+Description=Rover ROS2 stack bring-up (runs start_ros2_local.sh on boot)
+# Need network up so Deepgram TTS can fetch the ready-announcement WAV
+# on first run, and so .groundctl.env's NTRIP credentials are usable
+# when the GPS stack tries to connect.
+# pulseaudio.socket needed so paplay can find the user pulse daemon
+# for the "ROS2 initiated" announcement at the end of bring-up.
+After=network-online.target docker.service pulseaudio.socket
+Wants=network-online.target docker.service pulseaudio.socket
+# If the bring-up fails repeatedly, don't infinite-loop.
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+# oneshot + RemainAfterExit means systemctl --user is-active reports
+# whether the LAST bring-up completed successfully. Easier to diagnose
+# than a constantly-respawning service when something's wrong.
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=%h/.groundctl.env
+# paplay needs to find the user pulse daemon. systemd-user services don't
+# inherit XDG_RUNTIME_DIR / PULSE_SERVER reliably, even though they
+# usually inherit the user session env. Set both explicitly so paplay
+# resolves to the correct pulse socket instead of falling through to
+# ALSA default (which is HDMI on Jetson, silent if no monitor).
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=PULSE_SERVER=unix:/run/user/1000/pulse/native
+ExecStart=/bin/bash %h/start_ros2_local.sh
+# Bring-up is ~60-90s of sequential docker waits. Don't let systemd
+# kill it as a hung start.
+TimeoutStartSec=300
+# Restart on failure (e.g. transient docker not ready), but bounded by
+# StartLimitBurst above.
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

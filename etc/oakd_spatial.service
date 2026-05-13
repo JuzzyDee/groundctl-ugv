@@ -1,0 +1,24 @@
+[Unit]
+Description=Rover OAK-D spatial object detection (person tracking with 3D position)
+# We don't depend on the bridge's systemd unit because the bridge runs in
+# Docker, not as a user service. The daemon is tolerant of the bridge
+# being briefly unreachable — POSTs are dropped silently and retried on
+# the next frame. If the bridge is never up, tracklets still run on the
+# OAK-D; journal will show the post failures.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/ugv_jetson/ugv-env/bin/python3 -u %h/oakd_spatial.py
+Restart=on-failure
+RestartSec=3
+# Pipeline start-up (first run downloads the mobilenet blob) can take
+# ~30s. Don't let systemd misread that as a fault.
+TimeoutStartSec=60
+# Journal for logs.
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
