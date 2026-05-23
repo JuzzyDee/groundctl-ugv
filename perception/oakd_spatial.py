@@ -292,11 +292,16 @@ def main():
     CAPTURE_DIR.mkdir(parents=True, exist_ok=True)
     SESSION_DIR.mkdir(parents=True, exist_ok=True)
     latest_rgb = None
-    last_trigger_mtime = 0.0
+    # Seed "last seen" mtimes from the existing trigger/toggle files so a file
+    # that's been on disk since a previous run doesn't read as a fresh event at
+    # startup. Without this, a persistent SESSION_TOGGLE (mtime > 0.0) trips the
+    # toggle on the first loop and auto-starts a capture session on every
+    # boot/restart — which silently filled the disk with frame dumps.
+    last_trigger_mtime = CAPTURE_TRIGGER.stat().st_mtime if CAPTURE_TRIGGER.exists() else 0.0
 
     # Capture session state — toggled by SESSION_TOGGLE file mtime changes.
     session_active = False
-    last_session_toggle_mtime = 0.0
+    last_session_toggle_mtime = SESSION_TOGGLE.stat().st_mtime if SESSION_TOGGLE.exists() else 0.0
     current_session_dir: Path | None = None
     session_frame_count = 0
 
