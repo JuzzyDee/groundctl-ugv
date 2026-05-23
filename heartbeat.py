@@ -75,8 +75,27 @@ MAX_MOVE_DURATION = 10.0  # closed-loop intents (drive_distance) are safer than 
 # truly-stale reflections is capped.
 CONTEXT_WINDOW = 12
 
-MEMORIA_URL = os.environ.get("MEMORIA_URL", "")  # empty → memoria writes silently skipped
-MEMORIA_TOKEN = os.environ.get("MEMORIA_WEBHOOK_TOKEN", "")
+# Oneiro MCP — one Cloudflare Workers endpoint for both reads and writes, authed
+# with a single rover-scoped bearer key. The key's server-side role (`rover`)
+# permits recall_* + remember/remember_with_image and rejects forget/reframe/
+# reflect at dispatch. Reads reach Haiku via the Anthropic mcp_servers connector
+# (restricted to ONEIRO_RECALL_TOOLS below). Writes go through exec_remember()
+# as a direct tools/call to remember_with_image — NOT the connector — because
+# the connector executes tools server-side and Haiku can't emit the camera frame
+# as base64 text; the Python side holds the bytes and attaches them. Leave empty
+# to keep the rover observe-and-forget.
+ONEIRO_MCP_URL = os.environ.get("ONEIRO_MCP_URL", "")
+ONEIRO_MCP_TOKEN = os.environ.get("ONEIRO_MCP_TOKEN", "")
+# Single gate for all Oneiro paths (connector reads, writes, startup banner) so
+# they can't drift apart: both the endpoint AND the bearer key must be set, else
+# the connector would attach with an empty token (401 every beat) while the
+# banner still claimed "connected".
+ONEIRO_ENABLED = bool(ONEIRO_MCP_URL and ONEIRO_MCP_TOKEN)
+
+# Recall tools surfaced to Haiku through the connector. Reads only — keeps Haiku
+# from seeing remember_with_image (it can't supply the image) or the forbidden
+# forget/reframe/reflect, even though the un-gated tools/list exposes them.
+ONEIRO_RECALL_TOOLS = ["recall_orient", "recall_check", "recall_specific", "recall_image"]
 
 DEEPGRAM_API_KEY = os.environ.get("DEEPGRAM_API_KEY", "")
 
@@ -310,7 +329,7 @@ TOOLS = [
     },
     {
         "name": "remember",
-        "description": "Store a memory in Memoria. Use this for moments worth keeping — something you saw, an encounter, a realisation. The current camera frame is attached automatically.",
+        "description": "Store a memory in Oneiro. Use this for moments worth keeping — something you saw, an encounter, a realisation. The current camera frame is attached automatically.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -455,10 +474,10 @@ EXECUTOR_URL = f"http://{ROVER_IP}:5050"
 
 # Actions whose arguments leak narrative content heavily enough to confuse
 # small models into treating them as current-frame facts. remember() is the
-# main culprit — its summary is written with authoritative voice ("Chopper on
-# the sand") and gets woven into later scenes. The content is already
-# persisted to Memoria, so stripping it here costs nothing. Other actions
-# carry short, structural, or numerical args whose continuity value
+# main culprit — its summary is written in authoritative voice ("Chopper on the
+# sand") and gets woven into later scenes as if still true. The content is
+# already persisted to Oneiro, so stripping the arg here costs nothing. Other
+# actions carry short, structural, or numerical args whose continuity value
 # (dialogue, intent reasons, trajectory) outweighs their leak risk.
 _STRIP_ARGS = {"remember"}
 
@@ -476,10 +495,10 @@ def _format_action(action_str):
 def format_history():
     """Recent beats as {reflection → actions}. Reflections are truncated to
     160 chars to prevent novelistic prose from drifting into later scenes.
-    remember() args are still stripped — those are written in deliberately
-    authoritative voice for Memoria and leak hardest if left in-prompt.
-    Other action args (dialogue, intent reasons, move trajectory) carry
-    continuity value and stay intact."""
+    remember() args are stripped (see _STRIP_ARGS) — those are written in
+    deliberately authoritative voice for Oneiro and leak hardest if left
+    in-prompt. Other action args (dialogue, intent reasons, move trajectory)
+    carry continuity value and stay intact."""
     if not beat_history:
         return ""
     lines = [
@@ -823,33 +842,53 @@ def exec_look(pan, tilt, dry_run=False):
 
 
 def exec_remember(content, summary, tags, frame_b64, dry_run=False):
+    """Write an episodic memory with the current frame to Oneiro via a direct
+    MCP tools/call to remember_with_image. Deliberately NOT routed through the
+    Anthropic connector: the connector runs tool calls server-side and Haiku
+    can't emit the frame as base64 text, so the Python side — which already
+    holds the bytes — makes the call itself. entity is fixed to 'rover'."""
     if dry_run:
         print(f"  [DRY RUN] Would remember: \"{summary}\"")
         return
-    if not MEMORIA_TOKEN:
-        print("  No MEMORIA_WEBHOOK_TOKEN, skipping memory")
+    if not ONEIRO_ENABLED:
+        print("  No ONEIRO_MCP_URL/TOKEN, skipping memory")
         return
     payload = {
-        "content": content,
-        "summary": summary,
-        "type": "episodic",
-        "entity": "rover",
-        "tags": tags or [],
-        "image": frame_b64,
-        "image_mime": "image/jpeg"
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {
+            "name": "remember_with_image",
+            "arguments": {
+                "content": content,
+                "summary": summary,
+                "memory_type": "episodic",
+                "entity": "rover",
+                "tags": tags or [],
+                "image_base64": frame_b64,
+                "image_mime": "image/jpeg",
+            },
+        },
     }
     try:
         r = requests.post(
-            f"{MEMORIA_URL}/api/remember",
+            ONEIRO_MCP_URL,
             json=payload,
-            headers={"Authorization": f"Bearer {MEMORIA_TOKEN}"},
-            timeout=30
+            headers={
+                "Authorization": f"Bearer {ONEIRO_MCP_TOKEN}",
+                "Content-Type": "application/json",
+                "Accept": "application/json, text/event-stream",
+            },
+            timeout=30,
         )
-        if r.status_code == 200:
-            mem_id = r.json().get("id", "?")
-            print(f"  Remembered: {summary} (id={mem_id})")
+        if r.status_code != 200:
+            print(f"  Memory store failed: {r.status_code} {r.text[:120]}")
+            return
+        body = r.json()
+        if body.get("error"):
+            print(f"  Memory rejected: {body['error'].get('message', body['error'])}")
         else:
-            print(f"  Memory store failed: {r.status_code} {r.text[:100]}")
+            print(f"  Remembered: {summary}")
     except Exception as e:
         print(f"  Memory error: {e}")
 
@@ -1193,7 +1232,7 @@ def heartbeat(beat_num, test_frame=None, dry_run=False, idle_timeout=False):
     # response we're about to discard anyway.
     cancelled = False
     response = None
-    with client.messages.stream(
+    stream_kwargs = dict(
         model=MODELS[MODE],
         max_tokens=MAX_TOKENS[MODE],
         system=build_system_blocks(),
@@ -1208,8 +1247,28 @@ def heartbeat(beat_num, test_frame=None, dry_run=False, idle_timeout=False):
                 }},
                 {"type": "text", "text": user_text}
             ]
+        }],
+    )
+    # Attach Oneiro recall via the Anthropic MCP connector when configured. The
+    # connector is beta in this SDK (mcp_servers lives under client.beta.messages),
+    # so we route through the beta namespace + betas flag only when it's active;
+    # the no-Oneiro path stays on the stable client.messages.stream, unchanged.
+    # allowed_tools restricts the surface to reads — writes go via exec_remember.
+    use_oneiro = ONEIRO_ENABLED
+    if use_oneiro:
+        stream_kwargs["mcp_servers"] = [{
+            "type": "url",
+            "name": "oneiro",
+            "url": ONEIRO_MCP_URL,
+            "authorization_token": ONEIRO_MCP_TOKEN,
+            "tool_configuration": {"enabled": True, "allowed_tools": ONEIRO_RECALL_TOOLS},
         }]
-    ) as stream:
+        # 2025-04-04 uses the simple mcp_servers+tool_configuration shape. The
+        # newer 2025-11-20 beta requires an mcp_toolset entry inside `tools`
+        # referencing the server — more surface than we need for read-only recall.
+        stream_kwargs["betas"] = ["mcp-client-2025-04-04"]
+    stream_factory = client.beta.messages.stream if use_oneiro else client.messages.stream
+    with stream_factory(**stream_kwargs) as stream:
         for _ in stream:
             if pending_completion():
                 cancelled = True
@@ -1385,7 +1444,7 @@ def main():
     print(f"  Max speed: {MAX_SPEED}")
     print(f"  Context: last {CONTEXT_WINDOW} beats")
     print(f"  Voice: {'Hyperion' if DEEPGRAM_API_KEY else 'espeak'}")
-    print(f"  Memoria: {'connected' if MEMORIA_TOKEN else 'disabled'}")
+    print(f"  Oneiro: {'connected (recall + write)' if ONEIRO_ENABLED else 'disabled'}")
     by_cat = list_intents_by_category()
     print(f"  Intents (nav): {', '.join(by_cat['nav']) or '—'}")
     print(f"  Intents (attention): {', '.join(by_cat['attention']) or '—'}")
