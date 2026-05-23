@@ -86,6 +86,11 @@ CONTEXT_WINDOW = 12
 # to keep the rover observe-and-forget.
 ONEIRO_MCP_URL = os.environ.get("ONEIRO_MCP_URL", "")
 ONEIRO_MCP_TOKEN = os.environ.get("ONEIRO_MCP_TOKEN", "")
+# Single gate for all Oneiro paths (connector reads, writes, startup banner) so
+# they can't drift apart: both the endpoint AND the bearer key must be set, else
+# the connector would attach with an empty token (401 every beat) while the
+# banner still claimed "connected".
+ONEIRO_ENABLED = bool(ONEIRO_MCP_URL and ONEIRO_MCP_TOKEN)
 
 # Recall tools surfaced to Haiku through the connector. Reads only — keeps Haiku
 # from seeing remember_with_image (it can't supply the image) or the forbidden
@@ -845,7 +850,7 @@ def exec_remember(content, summary, tags, frame_b64, dry_run=False):
     if dry_run:
         print(f"  [DRY RUN] Would remember: \"{summary}\"")
         return
-    if not ONEIRO_MCP_URL or not ONEIRO_MCP_TOKEN:
+    if not ONEIRO_ENABLED:
         print("  No ONEIRO_MCP_URL/TOKEN, skipping memory")
         return
     payload = {
@@ -1249,7 +1254,7 @@ def heartbeat(beat_num, test_frame=None, dry_run=False, idle_timeout=False):
     # so we route through the beta namespace + betas flag only when it's active;
     # the no-Oneiro path stays on the stable client.messages.stream, unchanged.
     # allowed_tools restricts the surface to reads — writes go via exec_remember.
-    use_oneiro = bool(ONEIRO_MCP_URL)
+    use_oneiro = ONEIRO_ENABLED
     if use_oneiro:
         stream_kwargs["mcp_servers"] = [{
             "type": "url",
@@ -1439,7 +1444,7 @@ def main():
     print(f"  Max speed: {MAX_SPEED}")
     print(f"  Context: last {CONTEXT_WINDOW} beats")
     print(f"  Voice: {'Hyperion' if DEEPGRAM_API_KEY else 'espeak'}")
-    print(f"  Oneiro: {'connected (recall + write)' if ONEIRO_MCP_URL else 'disabled'}")
+    print(f"  Oneiro: {'connected (recall + write)' if ONEIRO_ENABLED else 'disabled'}")
     by_cat = list_intents_by_category()
     print(f"  Intents (nav): {', '.join(by_cat['nav']) or '—'}")
     print(f"  Intents (attention): {', '.join(by_cat['attention']) or '—'}")
