@@ -263,7 +263,24 @@ def post_to_bridge(detections):
         pass
 
 
+def _safe_mtime(path: Path) -> float:
+    """mtime of `path`, or 0.0 if it's absent or vanishes between check and stat."""
+    try:
+        return path.stat().st_mtime
+    except OSError:
+        return 0.0
+
+
 def main():
+    """
+    Run the OAK-D spatial detection service: build and start the DepthAI pipeline, capture RGB frames on filesystem triggers, convert TRACKED tracklets into metric detections, and POST those detections to the configured bridge.
+    
+    This function installs SIGINT/SIGTERM handlers, enforces a single running instance, constructs and starts the pipeline, attaches host output queues for tracker tracklets and passthrough RGB frames, and enters the main processing loop. In the loop it:
+    - saves one-shot or session-captured JPEG frames when the corresponding trigger files are updated;
+    - filters for TRACKED tracklets, converts them to the outgoing detection schema, and sends them to the bridge;
+    - maintains simple runtime statistics and logs a periodic summary.
+    On shutdown it stops the pipeline and performs graceful cleanup.
+    """
     signal.signal(signal.SIGTERM, _shutdown)
     signal.signal(signal.SIGINT, _shutdown)
     check_singleton()
@@ -292,11 +309,16 @@ def main():
     CAPTURE_DIR.mkdir(parents=True, exist_ok=True)
     SESSION_DIR.mkdir(parents=True, exist_ok=True)
     latest_rgb = None
-    last_trigger_mtime = 0.0
+    # Seed "last seen" mtimes from the existing trigger/toggle files so a file
+    # that's been on disk since a previous run doesn't read as a fresh event at
+    # startup. Without this, a persistent SESSION_TOGGLE (mtime > 0.0) trips the
+    # toggle on the first loop and auto-starts a capture session on every
+    # boot/restart — which silently filled the disk with frame dumps.
+    last_trigger_mtime = _safe_mtime(CAPTURE_TRIGGER)
 
     # Capture session state — toggled by SESSION_TOGGLE file mtime changes.
     session_active = False
-    last_session_toggle_mtime = 0.0
+    last_session_toggle_mtime = _safe_mtime(SESSION_TOGGLE)
     current_session_dir: Path | None = None
     session_frame_count = 0
 
