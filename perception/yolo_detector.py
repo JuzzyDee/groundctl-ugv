@@ -77,12 +77,13 @@ class YoloDetector(Node):
         # label is wrong; Haiku's own vision reads the frame for what it
         # actually is. Narrow this list if you see too many false positives.
         #   0 person  14 bird  15 cat  16 dog  17 horse  20 elephant(kangaroo)
-        # Temporarily reverted to person-only on 2026-04-24 — the 6-class list
-        # pushed yolo_detector to ~60% CPU / 1 GB RAM which correlates with
-        # USB camera stutter on bus-shared gear. Restore when CPU headroom
-        # is there (lighter model, rate throttling, or offloading classes
-        # that matter less).
-        self.declare_parameter('classes', [0])
+        # Restored 2026-05-24. The 2026-04-24 person-only revert was a shot in
+        # the dark: the 6-class list was blamed for USB camera stutter, but the
+        # real cause was 1080p saturating the device's USB bus — fixed by
+        # dropping the camera to 720p, and it never recurred. Class count barely
+        # affects YOLO cost anyway (the model infers all 80 COCO classes; this
+        # only filters the results).
+        self.declare_parameter('classes', [0, 14, 15, 16, 17, 20])
         self.declare_parameter('inference_rate', 10.0)
         self.declare_parameter('device', 'cuda:0')
 
