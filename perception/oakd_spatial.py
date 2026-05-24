@@ -264,6 +264,15 @@ def post_to_bridge(detections):
 
 
 def main():
+    """
+    Run the OAK-D spatial detection service: build and start the DepthAI pipeline, capture RGB frames on filesystem triggers, convert TRACKED tracklets into metric detections, and POST those detections to the configured bridge.
+    
+    This function installs SIGINT/SIGTERM handlers, enforces a single running instance, constructs and starts the pipeline, attaches host output queues for tracker tracklets and passthrough RGB frames, and enters the main processing loop. In the loop it:
+    - saves one-shot or session-captured JPEG frames when the corresponding trigger files are updated;
+    - filters for TRACKED tracklets, converts them to the outgoing detection schema, and sends them to the bridge;
+    - maintains simple runtime statistics and logs a periodic summary.
+    On shutdown it stops the pipeline and performs graceful cleanup.
+    """
     signal.signal(signal.SIGTERM, _shutdown)
     signal.signal(signal.SIGINT, _shutdown)
     check_singleton()

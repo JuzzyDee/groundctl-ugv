@@ -55,12 +55,28 @@ _running = True
 
 
 def _shutdown(_signum, _frame):
+    """
+    Request a graceful shutdown by clearing the module run flag.
+    
+    Parameters:
+        _signum (int): Received signal number (ignored).
+        _frame (types.FrameType): Current stack frame (ignored).
+    """
     global _running
     _running = False
 
 
 def play_sound(path: Path) -> None:
-    """Play a WAV via paplay. Non-blocking — fire and forget."""
+    """
+    Play a WAV file for operator feedback without blocking the caller.
+    
+    Parameters:
+        path (Path): Path to the WAV file to play. If the file does not exist a warning is printed.
+        
+    Notes:
+        The function returns immediately after requesting playback. If the system player
+        (`paplay`) is not available, a warning is printed.
+    """
     if not path.exists():
         print(f"  WARN: sound file not found: {path}")
         return
@@ -75,7 +91,12 @@ def play_sound(path: Path) -> None:
 
 
 def is_bag_running() -> bool:
-    """True iff a ros2 bag record process is alive inside the container."""
+    """
+    Check whether a `ros2 bag record` process is running inside the configured Docker container.
+    
+    Returns:
+        bool: `True` if a matching process is found inside the container, `False` otherwise.
+    """
     try:
         result = subprocess.run(
             ["docker", "exec", CONTAINER, "pgrep", "-f", "ros2 bag record"],
@@ -87,7 +108,14 @@ def is_bag_running() -> bool:
 
 
 def start_bag() -> bool:
-    """Start a new bag in the container. Returns True on apparent success."""
+    """
+    Start a ROS 2 bag recording inside the configured Docker container.
+    
+    Ensures the host bag directory exists, launches a detached container command to run `ros2 bag record` with the configured topic filter and a timestamped output name, and verifies the recording process started.
+    
+    Returns:
+        True if the bag process appeared to start and is running, False otherwise.
+    """
     BAG_DIR_HOST.mkdir(parents=True, exist_ok=True)
     timestamp = time.strftime("%Y%m%d_%H%M%S")
     bag_name = f"outing_{timestamp}"
@@ -115,7 +143,14 @@ def start_bag() -> bool:
 
 
 def stop_bag() -> bool:
-    """SIGINT the bag process for clean metadata flush. Returns True on success."""
+    """
+    Stop the ros2 bag recording inside the configured container to allow it to flush metadata.
+    
+    Sends SIGINT to the bag process running in the container and waits ~1.5 seconds to allow metadata (e.g., metadata.yaml) to be written.
+    
+    Returns:
+        True if the stop command was issued and the wait completed, False otherwise.
+    """
     try:
         subprocess.run(
             ["docker", "exec", CONTAINER, "pkill", "-INT", "-f", "ros2 bag record"],
@@ -131,6 +166,11 @@ def stop_bag() -> bool:
 
 
 def check_singleton():
+    """
+    Ensure only one instance of the session recorder runs by using a PID lock file.
+    
+    If the PID file exists, attempts to read the recorded PID and verifies a live process with that PID whose command line contains "session_recorder". If such a process is found, prints a message and exits the program with status code 1. Stale, missing, or invalid PID files are ignored. If no conflicting instance is detected, writes the current process PID to the PID file.
+    """
     if PIDFILE.exists():
         try:
             old_pid = int(PIDFILE.read_text().strip())
@@ -145,6 +185,17 @@ def check_singleton():
 
 
 def main():
+    """
+    Run the session recorder daemon: enforce a single instance, register signal handlers, monitor the toggle file, and start or stop the in-container ros2 bag process while playing feedback sounds.
+    
+    The function:
+    - Registers handlers for SIGTERM and SIGINT to request shutdown.
+    - Ensures only one instance runs by creating/checking a PID lock file.
+    - Creates the toggle file if it is missing but does not modify its existing modification time.
+    - Prints a startup banner describing watched paths and topic filter.
+    - Polls the toggle file for modification-time changes; on each detected toggle, queries the container bag state and either starts or stops the bag process and plays the corresponding WAV feedback if the action succeeds.
+    - Removes the PID lock file on exit.
+    """
     signal.signal(signal.SIGTERM, _shutdown)
     signal.signal(signal.SIGINT, _shutdown)
     check_singleton()
