@@ -263,6 +263,14 @@ def post_to_bridge(detections):
         pass
 
 
+def _safe_mtime(path: Path) -> float:
+    """mtime of `path`, or 0.0 if it's absent or vanishes between check and stat."""
+    try:
+        return path.stat().st_mtime
+    except OSError:
+        return 0.0
+
+
 def main():
     """
     Run the OAK-D spatial detection service: build and start the DepthAI pipeline, capture RGB frames on filesystem triggers, convert TRACKED tracklets into metric detections, and POST those detections to the configured bridge.
@@ -306,11 +314,11 @@ def main():
     # startup. Without this, a persistent SESSION_TOGGLE (mtime > 0.0) trips the
     # toggle on the first loop and auto-starts a capture session on every
     # boot/restart — which silently filled the disk with frame dumps.
-    last_trigger_mtime = CAPTURE_TRIGGER.stat().st_mtime if CAPTURE_TRIGGER.exists() else 0.0
+    last_trigger_mtime = _safe_mtime(CAPTURE_TRIGGER)
 
     # Capture session state — toggled by SESSION_TOGGLE file mtime changes.
     session_active = False
-    last_session_toggle_mtime = SESSION_TOGGLE.stat().st_mtime if SESSION_TOGGLE.exists() else 0.0
+    last_session_toggle_mtime = _safe_mtime(SESSION_TOGGLE)
     current_session_dir: Path | None = None
     session_frame_count = 0
 

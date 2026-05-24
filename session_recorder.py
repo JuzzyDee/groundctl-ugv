@@ -149,15 +149,20 @@ def stop_bag() -> bool:
     Sends SIGINT to the bag process running in the container and waits ~1.5 seconds to allow metadata (e.g., metadata.yaml) to be written.
     
     Returns:
-        True if the stop command was issued and the wait completed, False otherwise.
+        True if the bag process actually stopped, False if the stop command failed or it kept running.
     """
     try:
         subprocess.run(
             ["docker", "exec", CONTAINER, "pkill", "-INT", "-f", "ros2 bag record"],
             check=True, timeout=2.0,
         )
-        # Bag needs ~1s to write metadata.yaml. Wait it out.
+        # Bag needs ~1s to write metadata.yaml. Wait it out, then confirm it's
+        # actually down before reporting success (mirrors start_bag) — otherwise
+        # we'd play the stop sound while the bag is silently still recording.
         time.sleep(1.5)
+        if is_bag_running():
+            print("  BAG STOP failed — process still running; check /tmp/bag.log")
+            return False
         print("  BAG STOP")
         return True
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
