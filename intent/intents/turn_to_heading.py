@@ -1,8 +1,9 @@
-"""Turn to a compass heading — closed-loop on magnetometer.
+"""Turn a relative number of degrees — closed-loop on the gyro-integrated heading.
 
-Two modes:
-- Absolute: target_heading=N degrees from north (0=N, 90=E, 180=S, 270=W)
-- Relative: relative_turn=N degrees from current heading (positive=right/clockwise)
+state["heading"] is now gyro-relative (mag-free), so:
+- Relative: relative_turn=N degrees from current heading (+ve=right/clockwise) — the working mode.
+- Absolute: target_heading=N degrees from north — parked until the GNSS heading source
+  returns. A gyro heading has an arbitrary zero, so absolute bearings are meaningless for now.
 
 Combines with drive_distance to give Haiku the orient-to-camera primitive:
   1. Gimbal points at something at pan=-45°

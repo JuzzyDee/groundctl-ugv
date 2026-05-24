@@ -182,6 +182,10 @@ class BridgeNode(Node):
         self.imu_gx = 0.0
         self.imu_gy = 0.0
         self.imu_gz = 0.0
+        # Gyro-integrated yaw (deg): relative heading isolated from the corrupted
+        # magnetometer. Fed to state["heading"]; integrated in _imu_cb.
+        self.gyro_yaw_deg = 0.0
+        self._last_imu_t = None
         self.mag_x = 0.0
         self.mag_y = 0.0
         self.mag_z = 0.0
@@ -414,6 +418,17 @@ class BridgeNode(Node):
         self.imu_gy = msg.angular_velocity.y
         self.imu_gz = msg.angular_velocity.z
 
+        # Integrate yaw rate into a relative heading, mag-free. The magnetometer
+        # heading carries the task #58 sign-flip corruption that arced the rover
+        # into U-turns (see drive_distance.py), so course-hold and relative-turn
+        # ride this instead. Absolute bearing returns with the GNSS fix.
+        t = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
+        if self._last_imu_t is not None:
+            dt = t - self._last_imu_t
+            if 0.0 < dt < 0.5:
+                self.gyro_yaw_deg += math.degrees(self.imu_gz) * dt
+        self._last_imu_t = t
+
     def _mag_cb(self, msg):
         self.mag_x = msg.magnetic_field.x
         self.mag_y = msg.magnetic_field.y
@@ -532,8 +547,11 @@ def get_state():
     Backwards-compatible 'base' subdict preserves original ESP32 format.
     New 'position', 'velocity', 'heading', 'gimbal' subdicts are clean ROS2-derived values."""
 
-    # Compute compass heading from magnetometer (degrees from north, 0-360)
-    heading = (math.degrees(math.atan2(bridge.mag_y, bridge.mag_x)) + 360) % 360
+    # Heading: gyro-integrated yaw (relative, mag-free). The raw-magnetometer
+    # atan2 is kept only as a diagnostic (heading_mag) — it carries the task #58
+    # sign-flip corruption, so it no longer drives the course-hold loop.
+    heading = bridge.gyro_yaw_deg % 360
+    heading_mag = (math.degrees(math.atan2(bridge.mag_y, bridge.mag_x)) + 360) % 360
 
     return jsonify({
         "base": {
@@ -558,6 +576,7 @@ def get_state():
         "position": {"x": bridge.odom_x, "y": bridge.odom_y},
         "velocity": {"linear": bridge.linear_v, "angular": bridge.angular_v},
         "heading": heading,
+        "heading_mag": heading_mag,
         "gimbal": {"pan": bridge.gimbal_pan, "tilt": bridge.gimbal_tilt},
         "detections": bridge.get_detections(),
         "tracking": bridge.get_tracking_state(),
