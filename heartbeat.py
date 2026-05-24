@@ -419,7 +419,7 @@ TOOLS = [
             "properties": {
                 "intent": {
                     "type": "string",
-                    "description": "Intent name. Nav: drive_distance, turn_to_heading, face_gimbal, follow, go_forward, turn, sit, explore. Attention: scan, look_at."
+                    "description": "Intent name. Nav: drive_distance, turn_to_heading, face_gimbal, follow, approach, go_forward, turn, sit, explore. Attention: scan, look_at."
                 },
                 "params": {
                     "type": "object",
