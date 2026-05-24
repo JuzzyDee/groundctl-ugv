@@ -47,7 +47,7 @@ from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Imu, MagneticField, JointState, CompressedImage
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float32
-from vision_msgs.msg import Detection2DArray
+from vision_msgs.msg import Detection2DArray, Detection3DArray
 
 from flask import Flask, request, jsonify, Response, send_from_directory, abort
 
@@ -84,13 +84,38 @@ DEFAULT_FRAME_HEIGHT = 480
 _inbox_lock = threading.Lock()
 _inbox_messages = []
 
-# Latest spatial detections from oakd_spatial daemon (on host). Pushed via
-# POST /spatial_detections, read via GET /spatial_detections and included
-# in /state. Each entry has metric position + bearing + distance + stable
-# tracking ID — see oakd_spatial.py for schema.
+# Latest OAK-D spatial detections: person-filtered, each with metric 3D
+# position + bearing + distance + a stable per-object ID. Live source is the
+# /oak/nn/spatial_detections ROS topic (depthai_ros_driver), ingested by
+# _spatial_cb. The legacy POST /spatial_detections path (old host-side
+# oakd_spatial daemon) still writes here for back-compat, but is no longer fed
+# once oakd_spatial is disabled. Read via GET /spatial_detections and /state.
 _spatial_lock = threading.Lock()
 _spatial_detections: list[dict] = []
 _spatial_ts: float = 0.0
+
+# mobilenet-SSD (depthai_ros_driver default model) labels, VOC order. The
+# driver detects all 20 classes; _spatial_cb person-filters to preserve the
+# CLA-49 person-only spatial target list (keeps follow/approach from locking
+# onto Chopper or a horse).
+_VOC_LABELS = [
+    "background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",
+    "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike",
+    "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor",
+]
+# Frame-to-frame nearest-neighbour radius for the bridge-side ID assigner.
+_SPATIAL_TRACK_RADIUS_M = 1.5
+
+
+def _voc_label(raw) -> str:
+    """mobilenet-SSD class_id → label name. The depthai driver may emit the
+    label string or its numeric index (as a string); handle both."""
+    s = str(raw)
+    if s.isdigit():
+        i = int(s)
+        return _VOC_LABELS[i] if 0 <= i < len(_VOC_LABELS) else s
+    return s.lower()
+
 
 app = Flask(__name__)
 
@@ -239,6 +264,18 @@ class BridgeNode(Node):
         self._frame_dims_known = False  # flipped true on first compressed decode
         self.create_subscription(Detection2DArray, '/detections', self._detections_cb, 10)
 
+        # OAK-D spatial detections (depthai_ros_driver, native ROS). The driver
+        # publishes these as vision_msgs/Detection3DArray. Person-filtered into
+        # the metric-position schema follow/approach consume, with bridge-
+        # assigned IDs — the SpatialDetectionNetwork has no on-device
+        # ObjectTracker, so Detection3D.id arrives empty. Replaces the old
+        # host-side oakd_spatial HTTP POST path.
+        self._spatial_tracks: list[dict] = []  # previous frame: [{"id", "pos"}]
+        self._spatial_next_id = 0
+        self.create_subscription(
+            Detection3DArray, '/oak/nn/spatial_detections', self._spatial_cb, sensor_qos
+        )
+
         # Tracking state — set via POST /track, consumed by the gimbal servo.
         self._tracking_lock = threading.Lock()
         self._tracking_target_id: str | None = None
@@ -385,6 +422,72 @@ class BridgeNode(Node):
     def get_detections_with_count(self) -> tuple[list[dict], int]:
         with self._detections_lock:
             return list(self._detections), self._detections_count
+
+    def _spatial_cb(self, msg: Detection3DArray):
+        """Ingest OAK-D spatial detections (depthai_ros_driver publishes them
+        as vision_msgs/Detection3DArray) into the person-only, metric-position
+        dict schema follow/approach consume.
+
+        Positions are in the camera optical frame (x-right, y-down, z-forward)
+        — the same convention the old oakd_spatial used — so bearing/distance
+        carry over 1:1. Person-filtered (CLA-49); IDs assigned bridge-side.
+        Replaces the host-side oakd_spatial HTTP POST.
+        """
+        global _spatial_ts
+        parsed = []
+        for det in msg.detections:
+            if not det.results:
+                continue
+            if _voc_label(det.results[0].hypothesis.class_id) != "person":
+                continue
+            # Metric centroid (metres, optical frame) is in the hypothesis
+            # pose. bbox.center is image-plane pixels in this driver build.
+            pos = det.results[0].pose.pose.position
+            x = pos.x
+            y = pos.y
+            z = pos.z
+            bearing = math.degrees(math.atan2(x, z)) if z else 0.0
+            horizontal = (x * x + z * z) ** 0.5
+            parsed.append({
+                "id": None,  # assigned by _assign_spatial_ids below
+                "class_id": "person",
+                "status": "TRACKED",
+                "position_m": {"x": round(x, 3), "y": round(y, 3), "z": round(z, 3)},
+                "bearing_deg": round(bearing, 1),
+                "distance_m": round(horizontal, 2),
+            })
+        self._assign_spatial_ids(parsed)
+        with _spatial_lock:
+            _spatial_detections[:] = parsed
+            _spatial_ts = time.time()
+
+    def _assign_spatial_ids(self, dets: list[dict]) -> None:
+        """Greedy nearest-neighbour ID assignment, frame-to-frame, in place.
+
+        The driver has no on-device ObjectTracker, so we re-create stable IDs
+        here: match each detection to the nearest previous-frame track within a
+        horizontal radius and inherit its ID, else mint a new one. Same idea as
+        the old ZERO_TERM tracker — enough stability for follow/approach's
+        semantic pick and per-tick re-lock (which themselves fall back to
+        position-handover when an ID drops)."""
+        prev = self._spatial_tracks
+        claimed: set[str] = set()
+        for d in dets:
+            best_id, best_dist = None, _SPATIAL_TRACK_RADIUS_M
+            for t in prev:
+                if t["id"] in claimed:
+                    continue
+                dx = d["position_m"]["x"] - t["pos"]["x"]
+                dz = d["position_m"]["z"] - t["pos"]["z"]
+                dist = (dx * dx + dz * dz) ** 0.5
+                if dist < best_dist:
+                    best_id, best_dist = t["id"], dist
+            if best_id is None:
+                best_id = str(self._spatial_next_id)
+                self._spatial_next_id += 1
+            d["id"] = best_id
+            claimed.add(best_id)
+        self._spatial_tracks = [{"id": d["id"], "pos": d["position_m"]} for d in dets]
 
     def get_tracking_state(self) -> dict:
         with self._tracking_lock:
