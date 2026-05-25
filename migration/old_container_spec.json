@@ -1,0 +1,291 @@
+[
+    {
+        "Id": "b11141d74f2bfce311aea4a7d53e0aa0b49357500fb51b9af961d1590487aa32",
+        "Created": "2024-10-25T13:07:16.839451201Z",
+        "Path": "/opt/nvidia/nvidia_entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 1705,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "1970-01-01T00:00:39.196832544Z",
+            "FinishedAt": "1970-01-01T00:00:38.848934016Z"
+        },
+        "Image": "sha256:b7c0db9014a932deb8733f76051ee35ab82cf1aa5ffc9cd63490bbd466b2b354",
+        "ResolvConfPath": "/var/lib/docker/containers/b11141d74f2bfce311aea4a7d53e0aa0b49357500fb51b9af961d1590487aa32/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/b11141d74f2bfce311aea4a7d53e0aa0b49357500fb51b9af961d1590487aa32/hostname",
+        "HostsPath": "/var/lib/docker/containers/b11141d74f2bfce311aea4a7d53e0aa0b49357500fb51b9af961d1590487aa32/hosts",
+        "LogPath": "/var/lib/docker/containers/b11141d74f2bfce311aea4a7d53e0aa0b49357500fb51b9af961d1590487aa32/b11141d74f2bfce311aea4a7d53e0aa0b49357500fb51b9af961d1590487aa32-json.log",
+        "Name": "/ugv_jetson_ros_humble",
+        "RestartCount": 0,
+        "Driver": "overlay2",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": [
+            "6d8799cc1e92d8107e4fbec7ddea4743e4836f520c0c874eff08a3e096f25310",
+            "a2f0f18cf4eccc1544c0deb35e79fda99d24946ed18b0592fde9e75297686113",
+            "013469cf380f967edf62d657bf6276ff6d7bb4cad49565b0020d2f14421154ad"
+        ],
+        "HostConfig": {
+            "Binds": [
+                "/home/jetson:/home/ws",
+                "/tmp/.X11-unix:/tmp/.X11-unix",
+                "/dev:/dev"
+            ],
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "host",
+            "PortBindings": {},
+            "RestartPolicy": {
+                "Name": "always",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "ConsoleSize": [
+                49,
+                110
+            ],
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "private",
+            "Dns": [],
+            "DnsOptions": [],
+            "DnsSearch": [],
+            "ExtraHosts": null,
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": true,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": [
+                "label=disable"
+            ],
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "nvidia",
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": [],
+            "BlkioDeviceReadBps": [],
+            "BlkioDeviceWriteBps": [],
+            "BlkioDeviceReadIOps": [],
+            "BlkioDeviceWriteIOps": [],
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": [],
+            "DeviceCgroupRules": [
+                "a *:* rmw"
+            ],
+            "DeviceRequests": [
+                {
+                    "Driver": "",
+                    "Count": -1,
+                    "DeviceIDs": null,
+                    "Capabilities": [
+                        [
+                            "gpu"
+                        ]
+                    ],
+                    "Options": {}
+                }
+            ],
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": [],
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "MaskedPaths": null,
+            "ReadonlyPaths": null
+        },
+        "GraphDriver": {
+            "Data": {
+                "LowerDir": "/var/lib/docker/overlay2/2aec73bcbbd0762a2c890a06dfc13673e255619682c4779453f2f146933e4f49-init/diff:/var/lib/docker/overlay2/dde058142493abc27bc9f6811252370603c8b854b1fcae5023f53e5c03f233fa/diff:/var/lib/docker/overlay2/55a8936b20a294d67e760252c64dc3ade4f83811a47a47553da7f5a6a026dd32/diff:/var/lib/docker/overlay2/0637171632ff63dafba4698050e6fd51d4b5a7462a10617f100444d19d773bbb/diff:/var/lib/docker/overlay2/dd8209c69d187439fd5114b8a61608d7fed8826d10dd7a57c2f092779ab06414/diff:/var/lib/docker/overlay2/00caa09a2c6815822efe67910ca681d8960457cd295442fc5103dc1c31a75fc8/diff:/var/lib/docker/overlay2/f634ecb988ee61e1d3480ba311dcf328caa5f1282b038b9c5ac715d93919b23f/diff:/var/lib/docker/overlay2/08bf23f57948251949dfbce39f741e0c0e778650a0c2edbe5edbd7974648890e/diff:/var/lib/docker/overlay2/037ad6826679e8f372dd590646d6609bd6523e9c9f6ce42c796bfa958ced3df4/diff:/var/lib/docker/overlay2/f60eb0e310f0be718a825e77e6e1f235d3204129ab79a4ae509bcd8490369450/diff:/var/lib/docker/overlay2/0bd920b55dd06439a91e68ee696a34f4b0a1bf9fc17befca7c8e9c072e137be2/diff:/var/lib/docker/overlay2/1b96a58ed2823eb489ee0670c33437c722b60440c0a3603415b997e7c9d1c54e/diff:/var/lib/docker/overlay2/0ea3703a59ba8e2d146aec45f2a171c008479c6e90aaa259bfb8b0ec471eeab1/diff",
+                "MergedDir": "/var/lib/docker/overlay2/2aec73bcbbd0762a2c890a06dfc13673e255619682c4779453f2f146933e4f49/merged",
+                "UpperDir": "/var/lib/docker/overlay2/2aec73bcbbd0762a2c890a06dfc13673e255619682c4779453f2f146933e4f49/diff",
+                "WorkDir": "/var/lib/docker/overlay2/2aec73bcbbd0762a2c890a06dfc13673e255619682c4779453f2f146933e4f49/work"
+            },
+            "Name": "overlay2"
+        },
+        "Mounts": [
+            {
+                "Type": "bind",
+                "Source": "/tmp/.X11-unix",
+                "Destination": "/tmp/.X11-unix",
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            },
+            {
+                "Type": "volume",
+                "Name": "1a4b2e595e72f16a8410cb6cf1d77b20449ea5bcd02abae7460b9141f0121749",
+                "Source": "/var/lib/docker/volumes/1a4b2e595e72f16a8410cb6cf1d77b20449ea5bcd02abae7460b9141f0121749/_data",
+                "Destination": ":",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            },
+            {
+                "Type": "bind",
+                "Source": "/dev",
+                "Destination": "/dev",
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            },
+            {
+                "Type": "bind",
+                "Source": "/home/jetson",
+                "Destination": "/home/ws",
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            }
+        ],
+        "Config": {
+            "Hostname": "ubuntu",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": false,
+            "AttachStderr": false,
+            "Tty": true,
+            "OpenStdin": true,
+            "StdinOnce": false,
+            "Env": [
+                "HTTP_PROXY=http://192.168.10.185:10809",
+                "http_proxy=http://192.168.10.185:10809",
+                "HTTPS_PROXY=http://192.168.10.185:10809",
+                "XAUTHORITY=",
+                "LIBGL_ALWAYS_SOFTWARE=1",
+                "NO_PROXY=localhost,127.0.0.1,192.168.10.185",
+                "no_proxy=localhost,127.0.0.1,192.168.10.185",
+                "DISPLAY=localhost:12.0",
+                "https_proxy=http://192.168.10.185:10809",
+                "PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "NVARCH=sbsa",
+                "NVIDIA_REQUIRE_CUDA=cuda>=11.8",
+                "NV_CUDA_CUDART_VERSION=11.8.89-1",
+                "CUDA_VERSION=11.8.0",
+                "LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64",
+                "NVIDIA_VISIBLE_DEVICES=all",
+                "NVIDIA_DRIVER_CAPABILITIES=compute,utility",
+                "NV_CUDA_LIB_VERSION=11.8.0-1",
+                "NV_NVTX_VERSION=11.8.86-1",
+                "NV_LIBNPP_VERSION=11.8.0.86-1",
+                "NV_LIBNPP_PACKAGE=libnpp-11-8=11.8.0.86-1",
+                "NV_LIBCUSPARSE_VERSION=11.7.5.86-1",
+                "NV_LIBCUBLAS_PACKAGE_NAME=libcublas-11-8",
+                "NV_LIBCUBLAS_VERSION=11.11.3.6-1",
+                "NV_LIBCUBLAS_PACKAGE=libcublas-11-8=11.11.3.6-1",
+                "NV_LIBNCCL_PACKAGE_NAME=libnccl2",
+                "NV_LIBNCCL_PACKAGE_VERSION=2.15.5-1",
+                "NCCL_VERSION=2.15.5-1",
+                "NV_LIBNCCL_PACKAGE=libnccl2=2.15.5-1+cuda11.8",
+                "NVIDIA_PRODUCT_NAME=CUDA",
+                "NV_CUDA_CUDART_DEV_VERSION=11.8.89-1",
+                "NV_NVML_DEV_VERSION=11.8.86-1",
+                "NV_LIBCUSPARSE_DEV_VERSION=11.7.5.86-1",
+                "NV_LIBNPP_DEV_VERSION=11.8.0.86-1",
+                "NV_LIBNPP_DEV_PACKAGE=libnpp-dev-11-8=11.8.0.86-1",
+                "NV_LIBCUBLAS_DEV_PACKAGE_NAME=libcublas-dev-11-8",
+                "NV_LIBCUBLAS_DEV_VERSION=11.11.3.6-1",
+                "NV_LIBCUBLAS_DEV_PACKAGE=libcublas-dev-11-8=11.11.3.6-1",
+                "NV_CUDA_NSIGHT_COMPUTE_VERSION=11.8.0-1",
+                "NV_CUDA_NSIGHT_COMPUTE_DEV_PACKAGE=cuda-nsight-compute-11-8=11.8.0-1",
+                "NV_LIBNCCL_DEV_PACKAGE_NAME=libnccl-dev",
+                "NV_LIBNCCL_DEV_PACKAGE_VERSION=2.15.5-1",
+                "NV_LIBNCCL_DEV_PACKAGE=libnccl-dev=2.15.5-1+cuda11.8",
+                "LIBRARY_PATH=/usr/local/cuda/lib64/stubs",
+                "NV_CUDNN_VERSION=8.9.6.50",
+                "NV_CUDNN_PACKAGE_NAME=libcudnn8",
+                "NV_CUDNN_PACKAGE=libcudnn8=8.9.6.50-1+cuda11.8",
+                "NV_CUDNN_PACKAGE_DEV=libcudnn8-dev=8.9.6.50-1+cuda11.8"
+            ],
+            "Cmd": null,
+            "Image": "nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04",
+            "Volumes": {
+                ":": {}
+            },
+            "WorkingDir": "/home/ws",
+            "Entrypoint": [
+                "/opt/nvidia/nvidia_entrypoint.sh"
+            ],
+            "OnBuild": null,
+            "Labels": {
+                "com.nvidia.cudnn.version": "8.9.6.50",
+                "maintainer": "NVIDIA CORPORATION <cudatools@nvidia.com>",
+                "org.opencontainers.image.ref.name": "ubuntu",
+                "org.opencontainers.image.version": "22.04"
+            }
+        },
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "e6816074fce500b616f51a2f922b75344333327ec04a200b093b75831be8ce41",
+            "SandboxKey": "/var/run/docker/netns/default",
+            "Ports": {},
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "",
+            "Gateway": "",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "",
+            "IPPrefixLen": 0,
+            "IPv6Gateway": "",
+            "MacAddress": "",
+            "Networks": {
+                "host": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": null,
+                    "MacAddress": "",
+                    "DriverOpts": null,
+                    "NetworkID": "ef08dc24da917836cb18f82b8b270e8315e829a12ea9f20ee1755a59dbeadcd4",
+                    "EndpointID": "b1edc886268189977a0b9163a65a5d734f7af2be243758f554f916cf2c15ce9c",
+                    "Gateway": "",
+                    "IPAddress": "",
+                    "IPPrefixLen": 0,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "DNSNames": null
+                }
+            }
+        }
+    }
+]
