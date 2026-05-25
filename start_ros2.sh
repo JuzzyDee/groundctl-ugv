@@ -33,7 +33,7 @@
 #
 # Prereq on rover: /home/jetson/.groundctl.env must exist (chmod 600) and
 # export DEEPGRAM_API_KEY. When heartbeat moves to the rover it will also
-# need MEMORIA_WEBHOOK_TOKEN + ANTHROPIC_API_KEY in the same file.
+# need ANTHROPIC_API_KEY in the same file.
 #
 # Run from your Mac:
 #   ./start_ros2.sh

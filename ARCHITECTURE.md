@@ -18,8 +18,8 @@ The three-layer architecture treats the model as one input to a system that oper
 
 Claude inference. Two cadences:
 
-- **Heartbeat (Haiku 4.5)**: a periodic call (~12 s) that surfaces frame + state context to the model and receives one structured response. The response specifies whether to push a new intent, continue the current one, speak, or write a memory. Single API call, all side effects fanned out by the runtime.
-- **Conversation (Sonnet/Opus)**: triggered on speech or on intents that need richer reasoning. Carries full Memoria context. Replaces the heartbeat cadence while talking.
+- **Heartbeat (Haiku 4.5)**: a periodic call (~12 s) that surfaces frame + state context to the model and receives one structured response. The response specifies whether to push a new intent, continue the current one, or speak. Single API call, all side effects fanned out by the runtime.
+- **Conversation (Sonnet/Opus)**: triggered on speech or on intents that need richer reasoning. Replaces the heartbeat cadence while talking.
 
 Both run on the Jetson host. The intent layer's job is to make decisions about *what* the rover does at the timescale of human attention (seconds to minutes). It does not make decisions about *how* those intents execute — that's the perception and motor control layers' job.
 
@@ -70,7 +70,6 @@ The system roughly mirrors a biological motor-control hierarchy:
 | Cerebellum (planned) | Behaviour-cloned model                   | Learned smooth execution                                |
 | Spinal reflex        | LiDAR safety, cliff ToF                  | Emergency stop, no thinking                             |
 | Sensory cortex       | Camera, OAK-D, YOLO, LiDAR               | Perception feeding all layers                           |
-| Hippocampus          | Memoria                                  | Memory and place recognition                            |
 
 This isn't decorative framing — it's the actual structural argument. Different decisions belong at different speeds. The model is the slow deliberative layer because that's where it's good and where its latency doesn't matter. Reflexes are hardware because that's where speed matters and the model is bad at speed.
 
@@ -100,7 +99,7 @@ The recursion is unlimited. Three levels deep is normal. Drift is a *feature*; t
 
 ### Heartbeat returns one structured response
 
-Action + speech + memory write all bundled in one Haiku call. No chained inference. The response type:
+Action + speech bundled in one Haiku call. No chained inference. The response type:
 
 ```python
 class IntentResponse:
@@ -108,10 +107,9 @@ class IntentResponse:
     intent_type: str | None # if action is "push" or "switch_to"
     params: dict | None
     say: str | None         # vocalised via Deepgram TTS, optional
-    remember: str | None    # episodic memory note, optional
 ```
 
-Most heartbeats are just `{"action": "continue"}`. Sometimes `{"action": "continue", "say": "morning Margaret"}`. Occasionally a real interruption with push + say + remember bundled into one response. One inference call, all side effects fanned out by the runtime. Cost-optimal and atomic.
+Most heartbeats are just `{"action": "continue"}`. Sometimes `{"action": "continue", "say": "morning Margaret"}`. Occasionally a real interruption with push + say bundled into one response. One inference call, all side effects fanned out by the runtime. Cost-optimal and atomic.
 
 ### Claude sees raw frames
 
@@ -128,10 +126,6 @@ Natural control pattern for latency-affected operation. Turn to face target, the
 ### HTTP stream decoupled from ROS via FrameBroadcaster (now retired)
 
 An earlier failure mode (2026-04-24) had slow HTTP `/stream` consumers backpressuring the ROS subscription thread, starving `/snapshot` and the heartbeat. `FrameBroadcaster` fanned frames to per-client bounded queues so slow clients dropped their own frames. Later (CLA-63) the `/stream` path was retired entirely in favour of a throttled `/image_raw/compressed_low` topic feeding bridge subscriptions at 2 Hz; H264 streaming is planned as a separate concern.
-
-### Visual memories captured locally, not via prompt parameters
-
-When the rover sees something worth remembering, local code grabs the frame and writes it directly into Memoria's local SQLite (CRDT-synced to home server). Sending images through prompt parameters would burn ~20k tokens per memory; capturing locally is free. Recall returns visual content blocks (~400 tokens at 640×480) via Memoria's `recall_image` tool.
 
 ## Failure modes and how they're handled
 

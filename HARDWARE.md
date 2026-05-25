@@ -69,6 +69,5 @@ Central Queensland Coast. Quiet rural cul-de-sac, open grass, no through traffic
 
 ## Hardware that lives elsewhere
 
-- **Memoria server**: home Mac, exposed via Tailscale. The rover's hippocampus.
 - **Operator console**: phone, served from the bridge's `/web/` path. Mobile-first.
 - **Mac (Claude Code workstation)**: now optional for rover operation — heartbeat runs on the Jetson host as a systemd-user service. Mac is the development surface.
